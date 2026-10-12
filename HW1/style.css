@@ -1,0 +1,24 @@
+body {
+  background: #ffffff;
+  color: #111827;
+}
+
+/* Visible keyboard focus */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+/* Modal */
+#loginModal {
+  border: none;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 400px;
+  width: calc(100% - 32px);
+}
+
+/* Dark overlay behind modal */
+#loginModal::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
