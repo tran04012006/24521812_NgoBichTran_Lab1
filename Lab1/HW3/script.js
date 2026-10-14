@@ -58,3 +58,100 @@ window.addEventListener("pagehide", () => {
     intervalId = null;
   }
 });
+
+("use strict");
+
+// SLICE 2: State-Machine Form
+
+const FormState = Object.freeze({
+  IDLE: "idle",
+  SUBMITTING: "submitting",
+  SUCCESS: "success",
+  ERROR: "error",
+});
+
+const allowedTransitions = {
+  idle: ["submitting"],
+  submitting: ["success", "error"],
+  success: ["idle"],
+  error: ["submitting", "idle"],
+};
+
+let currentState = FormState.IDLE;
+
+const form = document.getElementById("registration-form");
+const submitBtn = document.getElementById("submit-btn");
+const formMessage = document.getElementById("form-message");
+
+function transitionTo(nextState) {
+  const allowed = allowedTransitions[currentState];
+
+  if (!allowed.includes(nextState)) {
+    throw new Error(`Invalid transition: ${currentState} -> ${nextState}`);
+  }
+
+  currentState = nextState;
+  renderForm();
+}
+
+function renderForm() {
+  submitBtn.disabled =
+    currentState === FormState.SUBMITTING || currentState === FormState.SUCCESS;
+
+  switch (currentState) {
+    case FormState.IDLE:
+      submitBtn.textContent = "Register Now";
+      formMessage.textContent = "";
+      break;
+
+    case FormState.SUBMITTING:
+      submitBtn.textContent = "Submitting...";
+      formMessage.textContent = "Processing registration...";
+      break;
+
+    case FormState.SUCCESS:
+      submitBtn.textContent = "Registered";
+      formMessage.textContent = "Registration successful!";
+      break;
+
+    case FormState.ERROR:
+      submitBtn.textContent = "Try Again";
+      formMessage.textContent = "Registration failed.";
+      break;
+  }
+}
+
+function simulateRegistration() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Demo: simulate a 70% success rate
+      if (Math.random() < 0.7) {
+        resolve({ message: "Registration successful" });
+      } else {
+        reject(new Error("Simulated server failure"));
+      }
+    }, 2000);
+  });
+}
+
+async function handleSubmit(event) {
+  event.preventDefault();
+
+  if (currentState !== FormState.IDLE && currentState !== FormState.ERROR) {
+    return;
+  }
+
+  transitionTo(FormState.SUBMITTING);
+
+  try {
+    await simulateRegistration();
+    transitionTo(FormState.SUCCESS);
+  } catch (error) {
+    console.error("Registration error:", error);
+    transitionTo(FormState.ERROR);
+  }
+}
+
+form.addEventListener("submit", handleSubmit);
+
+renderForm();

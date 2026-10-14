@@ -34,6 +34,22 @@
         </div>
       </section>
 
+      <section class="registration">
+        <h2>Event Registration</h2>
+
+        <form id="registration-form">
+          <label for="full-name">Full Name</label>
+          <input id="full-name" type="text" name="fullName" required />
+
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" required />
+
+          <button id="submit-btn" type="submit">Register Now</button>
+        </form>
+
+        <p id="form-message" role="status" aria-live="polite"></p>
+      </section>
+
       <p id="event-status"></p>
     </main>
   </body>
