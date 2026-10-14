@@ -1,0 +1,54 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #fff8f5;
+  font-family: Arial, sans-serif;
+  color: #2c1a17;
+}
+
+.container {
+  width: min(600px, calc(100% - 32px));
+  padding: 32px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(180, 60, 50, 0.1);
+}
+
+.countdown {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 32px 0;
+}
+
+.time-box {
+  min-width: 0;
+  padding: 16px 4px;
+  border-radius: 12px;
+  background: #fff1ec;
+}
+
+.time-box span {
+  display: block;
+  font-size: clamp(1.2rem, 5vw, 2rem);
+  font-weight: bold;
+  color: #d4453a;
+}
+
+.time-box p {
+  margin-bottom: 0;
+  font-size: 0.8rem;
+}
+
+#event-status {
+  font-weight: bold;
+  color: #4a8c52;
+}
