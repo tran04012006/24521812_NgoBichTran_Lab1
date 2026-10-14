@@ -1,4 +1,5 @@
 "use strict";
+// SLICE 1: DRIFT-FREE COUNTDOWN ENGINE
 
 const EVENT_DATE = "2026-12-25T13:00:00Z";
 
@@ -8,24 +9,21 @@ const daysEl = document.getElementById("days");
 const hoursEl = document.getElementById("hours");
 const minutesEl = document.getElementById("minutes");
 const secondsEl = document.getElementById("seconds");
-const statusEl = document.getElementById("event-status");
+const eventStatusEl = document.getElementById("event-status");
 
-// kiem tra event date
 if (Number.isNaN(targetTime)) {
   throw new Error("Invalid event date");
 }
 
-let intervalId = null;
+let countdownInterval = null;
 
 function updateCountdown() {
   const now = Date.now();
 
-  // tinh tgian con lai
   const remaining = Math.max(0, targetTime - now);
 
   const totalSeconds = Math.ceil(remaining / 1000);
 
-  // doi sang ngay, gio, phut, giay
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -37,44 +35,59 @@ function updateCountdown() {
   secondsEl.textContent = String(seconds).padStart(2, "0");
 
   if (remaining === 0) {
-    statusEl.textContent = "The event has started!";
+    eventStatusEl.textContent = "The event has started!";
 
-    if (intervalId !== null) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
+    stopCountdown();
   }
 }
 
-updateCountdown();
-
-if (Date.now() < targetTime) {
-  intervalId = setInterval(updateCountdown, 1000);
+function stopCountdown() {
+  if (countdownInterval !== null) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
 }
 
-window.addEventListener("pagehide", () => {
-  if (intervalId !== null) {
-    clearInterval(intervalId);
-    intervalId = null;
+function startCountdown() {
+  stopCountdown();
+
+  updateCountdown();
+
+  if (Date.now() < targetTime) {
+    countdownInterval = setInterval(updateCountdown, 1000);
+  }
+}
+
+startCountdown();
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    updateCountdown();
   }
 });
 
-("use strict");
+window.addEventListener("pagehide", stopCountdown);
 
-// SLICE 2: State-Machine Form
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    startCountdown();
+  }
+});
+
+// SLICE 2: STATE-MACHINE FORM
 
 const FormState = Object.freeze({
   IDLE: "idle",
   SUBMITTING: "submitting",
   SUCCESS: "success",
-  ERROR: "error",
+  ERROR: "error"
 });
 
 const allowedTransitions = {
   idle: ["submitting"],
   submitting: ["success", "error"],
   success: ["idle"],
-  error: ["submitting", "idle"],
+  error: ["submitting", "idle"]
 };
 
 let currentState = FormState.IDLE;
@@ -82,21 +95,28 @@ let currentState = FormState.IDLE;
 const form = document.getElementById("registration-form");
 const submitBtn = document.getElementById("submit-btn");
 const formMessage = document.getElementById("form-message");
+const welcomeMessage = document.getElementById("welcome-message");
 
 function transitionTo(nextState) {
   const allowed = allowedTransitions[currentState];
 
   if (!allowed.includes(nextState)) {
-    throw new Error(`Invalid transition: ${currentState} -> ${nextState}`);
+    throw new Error(
+      `Invalid transition: ${currentState} -> ${nextState}`
+    );
   }
 
+  console.log(`${currentState} -> ${nextState}`);
+
   currentState = nextState;
+
   renderForm();
 }
 
 function renderForm() {
   submitBtn.disabled =
-    currentState === FormState.SUBMITTING || currentState === FormState.SUCCESS;
+    currentState === FormState.SUBMITTING ||
+    currentState === FormState.SUCCESS;
 
   switch (currentState) {
     case FormState.IDLE:
@@ -116,17 +136,50 @@ function renderForm() {
 
     case FormState.ERROR:
       submitBtn.textContent = "Try Again";
-      formMessage.textContent = "Registration failed.";
+      formMessage.textContent =
+        "Registration failed. Please try again.";
       break;
   }
 }
 
+// SLICE 3: DOUBLE-SUBMIT & INPUT SECURITY
+
+function canSubmit() {
+  return (
+    currentState === FormState.IDLE ||
+    currentState === FormState.ERROR
+  );
+}
+
+function validateForm(fullName, email) {
+  if (!fullName || !email) {
+    return "Please fill in all fields.";
+  }
+
+  if (fullName.length > 100) {
+    return "Full name is too long.";
+  }
+
+  if (email.length > 254) {
+    return "Email is too long.";
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(email)) {
+    return "Invalid email address.";
+  }
+
+  return null;
+}
+
 function simulateRegistration() {
+  console.count("Registration requests");
+
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      // Demo: simulate a 70% success rate
       if (Math.random() < 0.7) {
-        resolve({ message: "Registration successful" });
+        resolve({ success: true });
       } else {
         reject(new Error("Simulated server failure"));
       }
@@ -137,17 +190,39 @@ function simulateRegistration() {
 async function handleSubmit(event) {
   event.preventDefault();
 
-  if (currentState !== FormState.IDLE && currentState !== FormState.ERROR) {
+  if (!canSubmit()) {
+    console.warn("Duplicate submission blocked");
+    return;
+  }
+
+  const fullName = document
+    .getElementById("full-name")
+    .value.trim();
+
+  const email = document
+    .getElementById("email")
+    .value.trim();
+
+  const validationError = validateForm(fullName, email);
+
+  if (validationError) {
+    formMessage.textContent = validationError;
     return;
   }
 
   transitionTo(FormState.SUBMITTING);
 
+  welcomeMessage.textContent = "";
+
   try {
     await simulateRegistration();
     transitionTo(FormState.SUCCESS);
+
+    welcomeMessage.textContent = `Welcome, ${fullName}!`;
+
   } catch (error) {
     console.error("Registration error:", error);
+
     transitionTo(FormState.ERROR);
   }
 }
